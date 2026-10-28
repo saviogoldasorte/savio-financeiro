@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savio Financeiro - Dashboard de Comissões GoldaSorte</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        golda: {
+                            black: '#0c0f12',
+                            dark: '#14181d',
+                            card: '#1c2229',
+                            border: '#2b3440',
+                            green: '#00e676',
+                            greenHover: '#00c853',
+                            accent: '#10b981',
+                            gold: '#ffd700',
+                            red: '#ef4444',
+                            redHover: '#dc2626'
+                        }
+                    },
+                    fontSize: {
+                        '3xs': '0.625rem',
+                        '2xs': '0.7rem'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0c0f12;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #14181d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b3440;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00e676;
+        }
+        .glow-green-sm {
+            box-shadow: 0 0 8px rgba(0, 230, 118, 0.2);
+        }
+        .glow-orange-sm {
+            box-shadow: 0 0 8px rgba(249, 115, 22, 0.2);
+        }
+        /* Filter Button Active States */
+        .btn-filter-active-green {
+            background-color: #00e676 !important;
+            color: #000000 !important;
+            font-weight: 700 !important;
+            border-color: #00e676 !important;
+        }
+        .btn-filter-active-red {
+            background-color: #ef4444 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            border-color: #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-golda-dark border-b border-golda-border sticky top-0 z-30 shadow-lg">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <!-- Brand Logo / Title Update -->
+            <div class="flex items-center space-x-3">
+                <div class="flex flex-col">
+                    <div class="flex items-center text-xl sm:text-2xl font-black tracking-wider uppercase text-white">
+                        <span class="text-white">SAVIO</span>
+                        <span class="text-golda-green ml-1.5 font-extrabold">FINANCEIRO</span>
+                    </div>
+                    <span class="text-3xs sm:text-2xs text-gray-400 font-medium tracking-wider uppercase -mt-1">
+                        Gestão de Comissões • GoldaSorte
+                    </span>
+                </div>
+            </div>
+
+            <!-- Actions Header -->
+            <div class="flex items-center space-x-2">
+                <button onclick="checkAdminAuth()" class="bg-golda-green hover:bg-golda-greenHover text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-lock"></i>
+                    <span class="hidden sm:inline">Gerenciar / Atualizar Dados</span>
+                    <span class="sm:hidden">Editar</span>
+                </button>
+                <button onclick="exportData()" class="bg-golda-card hover:bg-golda-border text-gray-200 font-semibold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg border border-golda-border transition text-xs">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 space-y-5">
+
+        <!-- Top Status & Date Info -->
+        <div class="bg-golda-dark rounded-xl p-4 border border-golda-border flex flex-col md:flex-row justify-between items-start md:items-center gap-3 glow-green-sm">
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-golda-green animate-pulse"></span>
+                    <h1 class="text-lg sm:text-xl font-bold text-white">Relatório de Distribuição de Comissões</h1>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5" id="period-display">Período: <span class="text-golda-green font-semibold" id="current-period">28/09 À 25/10 (4 SEMANAS)</span></p>
+            </div>
+            <!-- Dynamic Filter Buttons -->
+            <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                <button onclick="filterGroup('ALL')" id="btn-filter-all" class="filter-btn btn-filter-active-green text-xs px-3 py-1.5 rounded-md transition border border-golda-border">
+                    Todos
+                </button>
+                <button onclick="filterGroup('TOP')" id="btn-filter-top" class="filter-btn bg-golda-card hover:bg-golda-border text-gray-300 text-xs px-3 py-1.5 rounded-md border border-golda-border transition">
+                    Comissões Positivas
+                </button>
+                <button onclick="filterGroup('NEGATIVE')" id="btn-filter-negative" class="filter-btn bg-golda-card hover:bg-golda-border text-gray-300 text-xs px-3 py-1.5 rounded-md border border-golda-border transition">
+                    Totais Negativos
+                </button>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <!-- Card 1: Total Receitas -->
+            <div class="bg-golda-card border border-golda-border rounded-xl p-4 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-3 opacity-10 text-golda-green">
+                    <i class="fa-solid fa-wallet text-4xl"></i>
+                </div>
+                <p class="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Total de Receitas</p>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1" id="kpi-receitas">R$ 0,00</h2>
+                <div class="mt-1 flex items-center text-3xs text-gray-400">
+                    <i class="fa-solid fa-arrow-trend-up text-golda-green mr-1"></i>
+                    <span>Soma total de vendas</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Total Comissões Geradas (Agora em Laranja) -->
+            <div class="bg-golda-card border border-orange-500/30 rounded-xl p-4 relative overflow-hidden glow-orange-sm">
+                <div class="absolute top-0 right-0 p-3 opacity-15 text-orange-400">
+                    <i class="fa-solid fa-percentage text-4xl"></i>
+                </div>
+                <p class="text-2xs font-semibold text-orange-400 uppercase tracking-wider">Comissões Geradas</p>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-orange-400 mt-1" id="kpi-comissoes">R$ 0,00</h2>
+                <div class="mt-1 flex items-center text-3xs text-gray-400">
+                    <i class="fa-solid fa-users text-orange-400 mr-1"></i>
+                    <span>Indicações diretas</span>
+                </div>
+            </div>
+
+            <!-- Card 3: Premiações -->
+            <div class="bg-golda-card border border-golda-border rounded-xl p-4 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-3 opacity-10 text-red-500">
+                    <i class="fa-solid fa-trophy text-4xl"></i>
+                </div>
+                <p class="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Premiações Pagas</p>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-red-400 mt-1" id="kpi-premiacoes">R$ 0,00</h2>
+                <div class="mt-1 flex items-center text-3xs text-gray-400">
+                    <i class="fa-solid fa-gift text-red-400 mr-1"></i>
+                    <span>Prêmios distribuídos</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Comissões Finais Pagas -->
+            <div class="bg-golda-card border-2 border-golda-green rounded-xl p-4 relative overflow-hidden glow-green-sm">
+                <div class="absolute top-0 right-0 p-3 opacity-15 text-golda-green">
+                    <i class="fa-solid fa-hand-holding-dollar text-4xl"></i>
+                </div>
+                <p class="text-2xs font-extrabold text-golda-green uppercase tracking-wider">Comissões Finais Pagas</p>
+                <h2 class="text-2xl sm:text-3xl font-black text-golda-green mt-0.5" id="kpi-comissoes-pagas">R$ 0,00</h2>
+                <div class="mt-1 flex items-center text-3xs text-gray-300">
+                    <i class="fa-solid fa-check-circle text-golda-green mr-1"></i>
+                    <span>Líquido prestação de conta</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section (Horizontal Sorted Bar Chart + Doughnut) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <!-- Chart 1: Horizontal Bar Chart Sorted Decreasingly -->
+            <div class="lg:col-span-2 bg-golda-dark border border-golda-border rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-white flex items-center">
+                        <i class="fa-solid fa-chart-bar text-golda-green mr-2"></i>
+                        Comparativo: Lucro Deixado no Mês vs. Comissão a Pagar por Grupo
+                    </h3>
+                    <span class="text-3xs text-gray-400 bg-golda-card px-2 py-0.5 rounded border border-golda-border">Maior p/ Menor</span>
+                </div>
+                <div class="h-80 sm:h-96 w-full">
+                    <canvas id="chartCommissions"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Faturamento (Red Premiacoes e Laranja Comissões) -->
+            <div class="bg-golda-dark border border-golda-border rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center mb-3">
+                        <i class="fa-solid fa-chart-pie text-golda-green mr-2"></i>
+                        Distribuição do Faturamento
+                    </h3>
+                    <div class="h-48 sm:h-52 w-full flex items-center justify-center">
+                        <canvas id="chartDistribution"></canvas>
+                    </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-golda-border text-2xs text-gray-400 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Total de Receitas:</span>
+                        <span class="font-bold text-white" id="pie-total-liquido">R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Repasse de Comissões:</span>
+                        <span class="font-bold text-orange-400" id="pie-comissao-percent">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Breakdown Table -->
+        <div id="table-section" class="bg-golda-dark border border-golda-border rounded-xl overflow-hidden shadow-xl">
+            <div class="p-3.5 border-b border-golda-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center">
+                        <i class="fa-solid fa-list-check text-golda-green mr-2"></i>
+                        Detalhamento das Indicações por Grupo
+                    </h3>
+                    <p class="text-3xs text-gray-400">Visão hierárquica e cálculo de % mensal acumulada sem rolagem lateral</p>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <input type="text" id="table-search" placeholder="Buscar indicação..." onkeyup="searchTable()" class="w-full sm:w-56 bg-golda-card border border-golda-border rounded-lg px-2.5 py-2 text-gray-200 placeholder:text-gray-500 outline-none focus:border-golda-green">
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="w-full overflow-x-auto">
+                <table class="w-full text-left border-collapse text-2xs sm:text-xs">
+                    <thead>
+                        <tr class="bg-golda-card/80 text-gray-400 font-semibold uppercase text-3xs tracking-tight border-b border-golda-border">
+                            <th class="py-2 px-2.5">Líder / Indicação</th>
+                            <th class="py-2 px-2 text-right">Comissões</th>
+                            <th class="py-2 px-2 text-right">Premiações</th>
+                            <th class="py-2 px-2 text-right">Total Operacional</th>
+                            <th class="py-2 px-1 text-center">% Mensal</th>
+                            <th class="py-2 px-2.5 text-right">Comissão a Pagar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commission-table-body" class="divide-y divide-golda-border/30 text-gray-200 font-normal">
+                        <!-- Dynamic content -->
+                    </tbody>
+                    <tfoot class="bg-golda-card border-t-2 border-golda-green text-white font-bold text-xs">
+                        <tr id="table-footer">
+                            <td class="py-2.5 px-2.5 text-golda-green">TOTAL GERAL</td>
+                            <td class="py-2.5 px-2 text-right" id="foot-comissoes">R$ 0,00</td>
+                            <td class="py-2.5 px-2 text-right text-red-400" id="foot-premiacoes">R$ 0,00</td>
+                            <td class="py-2.5 px-2 text-right" id="foot-total">R$ 0,00</td>
+                            <td class="py-2.5 px-1 text-center text-gray-400">-</td>
+                            <td class="py-2.5 px-2.5 text-right text-golda-green text-sm font-extrabold" id="foot-mensal">R$ 0,00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Prestação de Conta & Info Guide -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 pb-6">
+            <!-- Table Prestação de Conta -->
+            <div class="bg-golda-dark border border-golda-border rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3 border-b border-golda-border pb-2.5">
+                        <h3 class="text-sm font-bold text-white flex items-center">
+                            <i class="fa-solid fa-file-invoice-dollar text-golda-green mr-2"></i>
+                            Prestação de Conta $
+                        </h3>
+                        <span class="bg-golda-card text-gray-300 text-3xs px-2 py-0.5 rounded border border-golda-border font-semibold">
+                            Fechamento Mensal
+                        </span>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <!-- Comissões Pagas -->
+                        <div class="flex justify-between items-center bg-golda-card p-2.5 rounded-lg border border-golda-border">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2.5 h-2.5 rounded-full bg-golda-green"></div>
+                                <span class="text-xs font-semibold text-gray-200">Comissões Pagas</span>
+                            </div>
+                            <span class="font-bold text-white text-xs sm:text-sm" id="pc-comissoes-pagas">R$ 0,00</span>
+                        </div>
+
+                        <!-- Perdidos do Mês -->
+                        <div class="bg-golda-card p-2.5 rounded-lg border border-golda-border space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-orange-400"></div>
+                                    <span class="text-xs font-semibold text-gray-200">Perdidos do Mês</span>
+                                </div>
+                                <span class="font-bold text-orange-400 text-xs sm:text-sm" id="pc-perdidos">R$ 0,00</span>
+                            </div>
+                            <div id="perdidos-itemized-list" class="text-3xs text-gray-400 pl-4 space-y-0.5 border-l border-golda-border/60">
+                                <!-- Dynamic detail items -->
+                            </div>
+                        </div>
+
+                        <!-- Gastos Adicionais -->
+                        <div class="bg-golda-card p-2.5 rounded-lg border border-golda-border space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                                    <span class="text-xs font-semibold text-gray-200">Gastos Adicionais</span>
+                                </div>
+                                <span class="font-bold text-red-400 text-xs sm:text-sm" id="pc-gastos">R$ 0,00</span>
+                            </div>
+                            <div id="gastos-itemized-list" class="text-3xs text-gray-400 pl-4 space-y-0.5 border-l border-golda-border/60">
+                                <!-- Dynamic detail items -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center bg-golda-green/10 border-2 border-golda-green p-3 rounded-xl mt-4">
+                    <span class="text-xs font-extrabold text-white uppercase tracking-wider">TOTAL FINAL</span>
+                    <span class="text-lg sm:text-xl font-black text-golda-green" id="pc-total-final">R$ 0,00</span>
+                </div>
+            </div>
+
+            <!-- Resumo e Guia -->
+            <div class="bg-golda-card border border-golda-border rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center mb-2.5">
+                        <i class="fa-solid fa-circle-info text-golda-green mr-2"></i>
+                        Como Funciona a Atualização Mensal?
+                    </h3>
+                    <div class="text-xs text-gray-300 space-y-2 leading-relaxed">
+                        <p>1. Clique no botão <strong class="text-golda-green">Gerenciar / Atualizar Dados</strong> no topo para abrir o painel de controle.</p>
+                        <p>2. Insira a senha de administrador (padrão: <code class="bg-golda-dark px-1 py-0.5 rounded text-golda-green">1234</code>).</p>
+                        <p>3. Modifique livremente as vendas, comissões, premiações, percentuais ou o campo de <strong class="text-golda-green">Comissão Manual</strong>.</p>
+                        <p>4. Adicione perdidos ou gastos do mês para dedução na prestação de conta final.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PIN AUTH MODAL -->
+    <div id="authModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
+        <div class="bg-golda-dark border border-golda-border rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center space-y-4">
+            <div class="w-12 h-12 bg-golda-green/20 rounded-full flex items-center justify-center mx-auto text-golda-green text-xl">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-white">Acesso Restrito</h3>
+                <p class="text-3xs text-gray-400 mt-1">Digite a senha de administrador para alterar os valores do dashboard.</p>
+            </div>
+            <div>
+                <input type="password" id="admin-pin-input" placeholder="Digite a senha (Padrão: 1234)" class="w-full bg-golda-card border border-golda-border rounded-lg px-3 py-2 text-center text-white placeholder:text-gray-500 outline-none focus:border-golda-green">
+                <p id="auth-error" class="text-red-400 text-3xs mt-1.5 hidden">Senha incorreta. Tente novamente.</p>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeAuthModal()" class="w-1/2 py-2 bg-golda-card hover:bg-golda-border text-gray-300 rounded-lg text-xs font-semibold">Cancelar</button>
+                <button onclick="validateAdminPin()" class="w-1/2 py-2 bg-golda-green hover:bg-golda-greenHover text-black font-bold rounded-lg text-xs shadow-md">Acessar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT DATA -->
+    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 overflow-y-auto">
+        <div class="bg-golda-dark border border-golda-border rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-golda-border flex justify-between items-center bg-golda-card">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center">
+                        <i class="fa-solid fa-sliders text-golda-green mr-2"></i>
+                        Gerenciar Dados do Mês e Gastos
+                    </h3>
+                    <p class="text-3xs text-gray-400">Atualize os valores das vendas, comissões manuais e detalhamento de despesas</p>
+                </div>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-4 sm:p-6 overflow-y-auto space-y-5 flex-grow text-xs">
+                <!-- Informações Gerais -->
+                <div class="bg-golda-card p-3 rounded-xl border border-golda-border space-y-2">
+                    <h4 class="text-xs font-bold text-golda-green uppercase tracking-wider">Configuração do Período e Segurança</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-3xs text-gray-400 mb-1">Período Exibido</label>
+                            <input type="text" id="edit-period" class="w-full bg-golda-dark border border-golda-border rounded px-2.5 py-1.5 text-xs text-white focus:border-golda-green outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-3xs text-gray-400 mb-1">Semanas Exibidas</label>
+                            <input type="text" id="edit-weeks" class="w-full bg-golda-dark border border-golda-border rounded px-2.5 py-1.5 text-xs text-white focus:border-golda-green outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-3xs text-gray-400 mb-1">Senha do Painel (PIN)</label>
+                            <input type="text" id="edit-admin-pin" class="w-full bg-golda-dark border border-golda-border rounded px-2.5 py-1.5 text-xs text-golda-green font-mono font-bold focus:border-golda-green outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Grupos / Líderes -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-xs font-bold text-golda-green uppercase tracking-wider">Grupos e Indicações</h4>
+                        <button onclick="addNewGroupModal()" class="bg-golda-card hover:bg-golda-border text-golda-green border border-golda-green/40 px-2.5 py-1 rounded text-3xs font-bold transition">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Adicionar Novo Grupo</span>
+                        </button>
+                    </div>
+
+                    <div id="modal-groups-container" class="space-y-3">
+                        <!-- Dynamic Group Editors -->
+                    </div>
+                </div>
+
+                <!-- Detalhamento de Perdidos e Gastos Adicionais -->
+                <div class="bg-golda-card p-3 rounded-xl border border-golda-border space-y-3">
+                    <h4 class="text-xs font-bold text-golda-green uppercase tracking-wider">Detalhamento de Perdidos e Gastos Adicionais</h4>
+                    
+                    <!-- Itemized Perdidos -->
+                    <div class="space-y-2 border-b border-golda-border pb-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xs font-semibold text-orange-400">Itens de Perdidos do Mês</span>
+                            <button onclick="addPerdidoItemModal()" class="text-3xs text-golda-green hover:underline font-bold">+ Adicionar Perdido</button>
+                        </div>
+                        <div id="modal-perdidos-container" class="space-y-1.5">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+
+                    <!-- Itemized Gastos -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xs font-semibold text-red-400">Itens de Gastos Adicionais</span>
+                            <button onclick="addGastoItemModal()" class="text-3xs text-golda-green hover:underline font-bold">+ Adicionar Gasto</button>
+                        </div>
+                        <div id="modal-gastos-container" class="space-y-1.5">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3 border-t border-golda-border bg-golda-card flex justify-end space-x-2">
+                <button onclick="closeEditModal()" class="px-3 py-1.5 bg-golda-dark text-gray-300 text-xs font-semibold rounded-lg hover:bg-golda-border transition">
+                    Cancelar
+                </button>
+                <button onclick="saveModalChanges()" class="px-4 py-1.5 bg-golda-green hover:bg-golda-greenHover text-black text-xs font-bold rounded-lg transition shadow-md">
+                    Salvar e Atualizar Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-golda-green text-black px-4 py-2.5 rounded-xl font-bold shadow-2xl flex items-center space-x-2 transform translate-y-20 opacity-0 transition-all duration-300">
+        <i class="fa-solid fa-circle-check text-sm"></i>
+        <span id="toast-message">Dados atualizados com sucesso!</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Default Data Structure
+        const defaultData = {
+            period: "28/09 À 25/10",
+            weeks: "4 SEMANAS",
+            adminPin: "Fla201752mengo",
+            perdidosItems: [],
+            gastosItems: [],
+            groups: [
+                {
+                    id: "g1",
+                    leader: "AlexandreFreitas",
+                    pctMensal: 15,
+                    customComissao: null,
+                    items: [
+                        { name: "AlexandreFreitas", receitas: 3820.00, comissoes: 784.00, premiacoes: 4425.93 },
+                        { name: "RobertGlaydson", receitas: 1536.00, comissoes: 307.39, premiacoes: 742.13 }
+                    ]
+                },
+                {
+                    id: "g2",
+                    leader: "RonaldoCeara",
+                    pctMensal: 10,
+                    customComissao: 341.00,
+                    items: [
+                        { name: "RonaldoCeara", receitas: 5592.00, comissoes: 1139.75, premiacoes: 1039.90 }
+                    ]
+                },
+                {
+                    id: "g3",
+                    leader: "DandanGerente",
+                    pctMensal: 10,
+                    customComissao: 232.00,
+                    items: [
+                        { name: "Rafael-SP", receitas: 2966.01, comissoes: 599.85, premiacoes: 65.11 },
+                        { name: "Dandansaopaulo", receitas: 12.00, comissoes: 2.75, premiacoes: 0.00 },
+                        { name: "LeonardoSaoPaulo", receitas: 20.00, comissoes: 4.00, premiacoes: 0.00 }
+                    ]
+                },
+                {
+                    id: "g4",
+                    leader: "JessicaMA",
+                    pctMensal: 10,
+                    customComissao: 75.00,
+                    items: [
+                        { name: "Marcony", receitas: 1273.00, comissoes: 255.85, premiacoes: 265.58 },
+                        { name: "FernandoSaoLuis", receitas: 0.00, comissoes: 0.00, premiacoes: 0.00 }
+                    ]
+                },
+                {
+                    id: "g5",
+                    leader: "JeehBet",
+                    pctMensal: 10,
+                    customComissao: 0.00,
+                    items: [
+                        { name: "OliverCba", receitas: 1010.85, comissoes: 202.12, premiacoes: 1082.46 }
+                    ]
+                },
+                {
+                    id: "g6",
+                    leader: "RJ",
+                    pctMensal: 10,
+                    customComissao: 0.00,
+                    items: [
+                        { name: "MatheusVargemGrande", receitas: 4404.66, comissoes: 862.49, premiacoes: 6492.33 }
+                    ]
+                },
+                {
+                    id: "g7",
+                    leader: "Leanderson (gambar)",
+                    pctMensal: 10,
+                    customComissao: 126.00,
+                    items: [
+                        { name: "JoseRibeiro", receitas: 2313.50, comissoes: 480.83, premiacoes: 566.79 }
+                    ]
+                },
+                {
+                    id: "g8",
+                    leader: "Tomaz2001",
+                    pctMensal: 10,
+                    customComissao: 234.00,
+                    items: [
+                        { name: "JoseCarlos", receitas: 3395.00, comissoes: 737.68, premiacoes: 312.49 }
+                    ]
+                },
+                {
+                    id: "g9",
+                    leader: "BancadoBiluka",
+                    pctMensal: 10,
+                    customComissao: 978.00,
+                    items: [
+                        { name: "BancadoBiluka", receitas: 15816.50, comissoes: 3066.78, premiacoes: 6503.39 },
+                        { name: "RichardAlisson", receitas: 2889.00, comissoes: 581.50, premiacoes: 2027.97 }
+                    ]
+                },
+                {
+                    id: "g10",
+                    leader: "TicoPalmeiras",
+                    pctMensal: 10,
+                    customComissao: 94.00,
+                    items: [
+                        { name: "JeehBet", receitas: 2704.56, comissoes: 532.95, premiacoes: 2116.76 },
+                        { name: "kamiladeAlmeidaSP", receitas: 2613.19, comissoes: 545.09, premiacoes: 1174.53 }
+                    ]
+                },
+                {
+                    id: "g11",
+                    leader: "Zecapdr",
+                    pctMensal: 10,
+                    customComissao: 232.00,
+                    items: [
+                        { name: "JoaoPauloPR", receitas: 3095.00, comissoes: 682.45, premiacoes: 83.06 }
+                    ]
+                },
+                {
+                    id: "g12",
+                    leader: "Rafael-SP",
+                    pctMensal: 10,
+                    customComissao: 179.00,
+                    items: [
+                        { name: "RonielJardim", receitas: 2499.08, comissoes: 505.52, premiacoes: 197.72 }
+                    ]
+                },
+                {
+                    id: "g13",
+                    leader: "MicaelCarius",
+                    pctMensal: 10,
+                    customComissao: 0.00,
+                    items: [
+                        { name: "MicaelCarius", receitas: 2065.00, comissoes: 417.45, premiacoes: 2545.05 }
+                    ]
+                },
+                {
+                    id: "g14",
+                    leader: "DiegoMa2",
+                    pctMensal: 10,
+                    customComissao: 46.00,
+                    items: [
+                        { name: "IagoSalvador", receitas: 2936.00, comissoes: 556.00, premiacoes: 1913.03 }
+                    ]
+                }
+            ]
+        };
+
+        // Application State
+        let appData = JSON.parse(localStorage.getItem('savio_goldasorte_commission_data')) || defaultData;
+        let currentFilter = 'ALL';
+        let chartCommissionsInstance = null;
+        let chartDistributionInstance = null;
+
+        // Atualizar senha no appData existente caso tenha sido salva a antiga no localStorage
+        appData.adminPin = "Fla201752mengo";
+        if (!appData.perdidosItems) appData.perdidosItems = [];
+        if (!appData.gastosItems) appData.gastosItems = [];
+
+        // Helper Functions
+        function formatMoney(amount) {
+            const val = parseFloat(amount) || 0;
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function calculateItemTotal(item) {
+            return (item.receitas || 0) - (item.comissoes || 0) - (item.premiacoes || 0);
+        }
+
+        function calculateGroupMetrics(group) {
+            let sumReceitas = 0;
+            let sumComissoes = 0;
+            let sumPremiacoes = 0;
+            let sumTotal = 0;
+
+            group.items.forEach(item => {
+                sumReceitas += item.receitas || 0;
+                sumComissoes += item.comissoes || 0;
+                sumPremiacoes += item.premiacoes || 0;
+                sumTotal += calculateItemTotal(item);
+            });
+
+            let comissaoMensal = 0;
+            if (group.customComissao !== null && group.customComissao !== undefined && group.customComissao !== '') {
+                comissaoMensal = parseFloat(group.customComissao);
+            } else {
+                let rawMensal = sumTotal > 0 ? (sumTotal * (group.pctMensal / 100)) : 0;
+                comissaoMensal = Math.floor(rawMensal);
+            }
+
+            if (sumTotal <= 0 && (group.customComissao === null || group.customComissao === undefined)) {
+                comissaoMensal = 0.00;
+            }
+
+            return {
+                receitas: sumReceitas,
+                comissoes: sumComissoes,
+                premiacoes: sumPremiacoes,
+                total: sumTotal,
+                comissaoMensal: comissaoMensal
+            };
+        }
+
+        // Security / Admin Access
+        function checkAdminAuth() {
+            document.getElementById('admin-pin-input').value = '';
+            document.getElementById('auth-error').classList.add('hidden');
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function validateAdminPin() {
+            const pin = document.getElementById('admin-pin-input').value;
+            if (pin === appData.adminPin) {
+                closeAuthModal();
+                openEditModal();
+            } else {
+                document.getElementById('auth-error').classList.remove('hidden');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        // Render Charts
+        function renderCharts() {
+            let groupMetricsList = appData.groups.map(g => {
+                const m = calculateGroupMetrics(g);
+                return {
+                    leader: g.leader,
+                    comissao: m.comissaoMensal,
+                    lucroOperacional: m.total
+                };
+            });
+
+            // Ordenar por Lucro Operacional Deixado pelo Grupo
+            groupMetricsList.sort((a, b) => b.lucroOperacional - a.lucroOperacional);
+
+            const labels = groupMetricsList.map(item => item.leader);
+            const dataLucro = groupMetricsList.map(item => item.lucroOperacional);
+            const dataCommissions = groupMetricsList.map(item => item.comissao);
+
+            // Mapeia as cores do Lucro Deixado: vermelho para valores negativos e branco para positivos
+            const bgLucroColors = dataLucro.map(val => val < 0 ? '#ef4444' : '#ffffff');
+
+            const ctx1 = document.getElementById('chartCommissions').getContext('2d');
+            if (chartCommissionsInstance) chartCommissionsInstance.destroy();
+
+            chartCommissionsInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Lucro Operacional Deixado (R$)',
+                            data: dataLucro,
+                            backgroundColor: bgLucroColors,
+                            borderRadius: 4,
+                            borderSkipped: false,
+                            barThickness: 10
+                        },
+                        {
+                            label: 'Comissão a Pagar (R$)',
+                            data: dataCommissions,
+                            backgroundColor: '#00e676',
+                            borderRadius: 4,
+                            borderSkipped: false,
+                            barThickness: 10
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: { 
+                                color: '#9ca3af', 
+                                font: { size: 10 }
+                            },
+                            grid: { color: '#2b3440' }
+                        },
+                        y: {
+                            ticks: { 
+                                color: '#ffffff', 
+                                font: { size: 11, family: 'Inter', weight: '600' }
+                            },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#d1d5db',
+                                font: { size: 10, family: 'Inter' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const item = groupMetricsList[index];
+                                    if (context.datasetIndex === 0) {
+                                        const labelText = item.lucroOperacional < 0 ? 'Prejuízo: ' : 'Lucro Deixado: ';
+                                        return labelText + formatMoney(item.lucroOperacional);
+                                    } else {
+                                        return 'Comissão A Pagar: ' + formatMoney(item.comissao);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            let totalReceitas = 0;
+            let totalComissoes = 0;
+            let totalPremiacoes = 0;
+
+            appData.groups.forEach(g => {
+                const m = calculateGroupMetrics(g);
+                totalReceitas += m.receitas;
+                totalComissoes += m.comissoes;
+                totalPremiacoes += m.premiacoes;
+            });
+
+            const lucroResidual = Math.max(0, totalReceitas - totalComissoes - totalPremiacoes);
+
+            const ctx2 = document.getElementById('chartDistribution').getContext('2d');
+            if (chartDistributionInstance) chartDistributionInstance.destroy();
+
+            chartDistributionInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Premiações Pagas', 'Comissões Geradas', 'Lucro Residual'],
+                    datasets: [{
+                        data: [totalPremiacoes, totalComissoes, lucroResidual],
+                        backgroundColor: ['#ef4444', '#f97316', '#3b82f6'],
+                        borderWidth: 2,
+                        borderColor: '#14181d'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#d1d5db', font: { family: 'Inter', size: 10 }, padding: 10 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + formatMoney(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        // Edit Modal Handlers
+        function openEditModal() {
+            document.getElementById('edit-period').value = appData.period || "";
+            document.getElementById('edit-weeks').value = appData.weeks || "";
+            document.getElementById('edit-admin-pin').value = appData.adminPin || "Fla201752mengo";
+
+            renderModalGroups();
+            renderModalPerdidosGastos();
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function renderModalGroups() {
+            const container = document.getElementById('modal-groups-container');
+            container.innerHTML = '';
+
+            appData.groups.forEach((group, gIndex) => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = "bg-golda-card border border-golda-border rounded-xl p-3 space-y-2";
+
+                let itemsHtml = '';
+                group.items.forEach((item, iIndex) => {
+                    itemsHtml += `
+                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-1.5 items-center bg-golda-dark p-2 rounded border border-golda-border/50 text-3xs">
+                            <div>
+                                <label class="text-3xs text-gray-400 sm:hidden">Nome:</label>
+                                <input type="text" value="${item.name}" onchange="updateModalItem(${gIndex}, ${iIndex}, 'name', this.value)" class="w-full bg-golda-card border border-golda-border rounded px-1.5 py-1 text-white outline-none">
+                            </div>
+                            <div>
+                                <label class="text-3xs text-gray-400 sm:hidden">Receitas:</label>
+                                <input type="number" step="0.01" value="${item.receitas}" onchange="updateModalItem(${gIndex}, ${iIndex}, 'receitas', parseFloat(this.value))" class="w-full bg-golda-card border border-golda-border rounded px-1.5 py-1 text-white outline-none">
+                            </div>
+                            <div>
+                                <label class="text-3xs text-gray-400 sm:hidden">Comissões:</label>
+                                <input type="number" step="0.01" value="${item.comissoes}" onchange="updateModalItem(${gIndex}, ${iIndex}, 'comissoes', parseFloat(this.value))" class="w-full bg-golda-card border border-golda-border rounded px-1.5 py-1 text-white outline-none">
+                            </div>
+                            <div>
+                                <label class="text-3xs text-gray-400 sm:hidden">Premiações:</label>
+                                <input type="number" step="0.01" value="${item.premiacoes}" onchange="updateModalItem(${gIndex}, ${iIndex}, 'premiacoes', parseFloat(this.value))" class="w-full bg-golda-card border border-golda-border rounded px-1.5 py-1 text-white outline-none">
+                            </div>
+                            <div class="text-right">
+                                <button onclick="removeModalItem(${gIndex}, ${iIndex})" class="text-red-400 hover:text-red-300 text-xs px-2 py-0.5">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                groupDiv.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2 border-b border-golda-border">
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <span class="text-3xs font-bold text-golda-green">Líder:</span>
+                            <input type="text" value="${group.leader}" onchange="updateModalGroupLeader(${gIndex}, this.value)" class="bg-golda-dark border border-golda-border rounded px-2 py-0.5 text-white outline-none">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-3xs text-gray-400">% Mensal:</span>
+                                <input type="number" value="${group.pctMensal}" onchange="updateModalGroupPct(${gIndex}, parseFloat(this.value))" class="w-12 bg-golda-dark border border-golda-border rounded px-1 py-0.5 text-white outline-none">
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-3xs text-golda-green font-bold">Comissão Manual (R$):</span>
+                                <input type="number" step="0.01" placeholder="Calculado" value="${group.customComissao !== null && group.customComissao !== undefined ? group.customComissao : ''}" onchange="updateModalGroupCustomComissao(${gIndex}, this.value)" class="w-20 bg-golda-dark border border-golda-border rounded px-1 py-0.5 text-golda-green font-bold outline-none">
+                            </div>
+                            <button onclick="removeModalGroup(${gIndex})" class="text-red-400 hover:text-red-300 text-xs px-1">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="hidden sm:grid sm:grid-cols-5 gap-1.5 text-3xs text-gray-400 font-semibold uppercase px-2">
+                            <span>Indicação</span>
+                            <span>Receita (R$)</span>
+                            <span>Comissão (R$)</span>
+                            <span>Premiação (R$)</span>
+                            <span class="text-right">Ação</span>
+                        </div>
+                        ${itemsHtml}
+                    </div>
+
+                    <button onclick="addModalItem(${gIndex})" class="text-3xs text-golda-green hover:underline font-semibold flex items-center space-x-1 pt-1">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Adicionar Indicação</span>
+                    </button>
+                `;
+
+                container.appendChild(groupDiv);
+            });
+        }
+
+        function renderModalPerdidosGastos() {
+            const perdidosContainer = document.getElementById('modal-perdidos-container');
+            perdidosContainer.innerHTML = '';
+            appData.perdidosItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center space-x-2 text-3xs";
+                div.innerHTML = `
+                    <input type="text" value="${item.desc}" onchange="appData.perdidosItems[${index}].desc = this.value" placeholder="Descrição" class="w-2/3 bg-golda-dark border border-golda-border rounded px-2 py-1 text-white placeholder:text-gray-500 outline-none">
+                    <input type="number" step="0.01" value="${item.amount}" onchange="appData.perdidosItems[${index}].amount = parseFloat(this.value) || 0" placeholder="Valor (R$)" class="w-1/3 bg-golda-dark border border-golda-border rounded px-2 py-1 text-white placeholder:text-gray-500 outline-none">
+                    <button onclick="removePerdidoItemModal(${index})" class="text-red-400 hover:text-red-300 px-1"><i class="fa-solid fa-trash"></i></button>
+                `;
+                perdidosContainer.appendChild(div);
+            });
+
+            const gastosContainer = document.getElementById('modal-gastos-container');
+            gastosContainer.innerHTML = '';
+            appData.gastosItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center space-x-2 text-3xs";
+                div.innerHTML = `
+                    <input type="text" value="${item.desc}" onchange="appData.gastosItems[${index}].desc = this.value" placeholder="Descrição" class="w-2/3 bg-golda-dark border border-golda-border rounded px-2 py-1 text-white placeholder:text-gray-500 outline-none">
+                    <input type="number" step="0.01" value="${item.amount}" onchange="appData.gastosItems[${index}].amount = parseFloat(this.value) || 0" placeholder="Valor (R$)" class="w-1/3 bg-golda-dark border border-golda-border rounded px-2 py-1 text-white placeholder:text-gray-500 outline-none">
+                    <button onclick="removeGastoItemModal(${index})" class="text-red-400 hover:text-red-300 px-1"><i class="fa-solid fa-trash"></i></button>
+                `;
+                gastosContainer.appendChild(div);
+            });
+        }
+
+        // Modal Mutation Helpers
+        function updateModalGroupLeader(gIndex, val) { appData.groups[gIndex].leader = val; }
+        function updateModalGroupPct(gIndex, val) { appData.groups[gIndex].pctMensal = val || 0; }
+        function updateModalGroupCustomComissao(gIndex, val) { 
+            appData.groups[gIndex].customComissao = (val === '' || val === null) ? null : parseFloat(val); 
+        }
+
+        function updateModalItem(gIndex, iIndex, field, val) {
+            appData.groups[gIndex].items[iIndex][field] = val;
+        }
+
+        function removeModalItem(gIndex, iIndex) {
+            appData.groups[gIndex].items.splice(iIndex, 1);
+            renderModalGroups();
+        }
+
+        function addModalItem(gIndex) {
+            appData.groups[gIndex].items.push({ name: "Nova Indicação", receitas: 0, comissoes: 0, premiacoes: 0 });
+            renderModalGroups();
+        }
+
+        function removeModalGroup(gIndex) {
+            appData.groups.splice(gIndex, 1);
+            renderModalGroups();
+        }
+
+        function addNewGroupModal() {
+            appData.groups.push({
+                id: "g_" + Date.now(),
+                leader: "Novo Líder",
+                pctMensal: 10,
+                customComissao: null,
+                items: [
+                    { name: "Nova Indicação", receitas: 0, comissoes: 0, premiacoes: 0 }
+                ]
+            });
+            renderModalGroups();
+        }
+
+        function addPerdidoItemModal() {
+            appData.perdidosItems.push({ desc: "Novo perdido", amount: 0 });
+            renderModalPerdidosGastos();
+        }
+
+        function removePerdidoItemModal(index) {
+            appData.perdidosItems.splice(index, 1);
+            renderModalPerdidosGastos();
+        }
+
+        function addGastoItemModal() {
+            appData.gastosItems.push({ desc: "Novo gasto", amount: 0 });
+            renderModalPerdidosGastos();
+        }
+
+        function removeGastoItemModal(index) {
+            appData.gastosItems.splice(index, 1);
+            renderModalPerdidosGastos();
+        }
+
+        function saveModalChanges() {
+            appData.period = document.getElementById('edit-period').value;
+            appData.weeks = document.getElementById('edit-weeks').value;
+            appData.adminPin = document.getElementById('edit-admin-pin').value || "Fla201752mengo";
+            localStorage.setItem('savio_goldasorte_commission_data', JSON.stringify(appData));
+            renderDashboard();
+            closeEditModal();
+            showToast('Dados atualizados com sucesso!');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const text = document.getElementById('toast-message');
+            text.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 2200);
+        }
+
+        function filterGroup(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('btn-filter-active-green', 'btn-filter-active-red');
+                btn.classList.add('bg-golda-card', 'text-gray-300', 'border-golda-border');
+            });
+
+            const activeBtn = document.getElementById('btn-filter-' + filter.toLowerCase());
+            if (activeBtn) {
+                if (filter === 'NEGATIVE') {
+                    activeBtn.classList.add('btn-filter-active-red');
+                } else {
+                    activeBtn.classList.add('btn-filter-active-green');
+                }
+                activeBtn.classList.remove('bg-golda-card', 'text-gray-300', 'border-golda-border');
+            }
+
+            renderDashboard();
+        }
+
+        function searchTable() {
+            const term = document.getElementById('table-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#commission-table-body tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'savio_golda_data.json';
+            link.click();
+            showToast('Dados exportados!');
+        }
+
+        function renderDashboard() {
+            const totalReceitas = appData.groups.reduce((sum, group) => sum + calculateGroupMetrics(group).receitas, 0);
+            const totalComissoes = appData.groups.reduce((sum, group) => sum + calculateGroupMetrics(group).comissoes, 0);
+            const totalPremiacoes = appData.groups.reduce((sum, group) => sum + calculateGroupMetrics(group).premiacoes, 0);
+            const totalFinal = appData.groups.reduce((sum, group) => sum + calculateGroupMetrics(group).comissaoMensal, 0);
+
+            document.getElementById('kpi-receitas').textContent = formatMoney(totalReceitas);
+            document.getElementById('kpi-comissoes').textContent = formatMoney(totalComissoes);
+            document.getElementById('kpi-premiacoes').textContent = formatMoney(totalPremiacoes);
+            document.getElementById('kpi-comissoes-pagas').textContent = formatMoney(totalFinal);
+
+            const tbody = document.getElementById('commission-table-body');
+            tbody.innerHTML = '';
+
+            let rows = appData.groups.map(group => {
+                const m = calculateGroupMetrics(group);
+                let display = true;
+                if (currentFilter === 'TOP' && m.comissaoMensal <= 0) display = false;
+                if (currentFilter === 'NEGATIVE' && m.comissaoMensal >= 0) display = false;
+
+                if (!display) return null;
+
+                return {
+                    leader: group.leader,
+                    comissoes: m.comissoes,
+                    premiacoes: m.premiacoes,
+                    totalOperacional: m.total,
+                    pctMensal: group.pctMensal,
+                    comissaoMensal: m.comissaoMensal
+                };
+            }).filter(Boolean);
+
+            rows.sort((a, b) => b.comissaoMensal - a.comissaoMensal);
+
+            rows.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-golda-card/40';
+                tr.innerHTML = `
+                    <td class="py-2.5 px-2.5 font-semibold text-white">${item.leader}</td>
+                    <td class="py-2.5 px-2 text-right text-gray-300">${formatMoney(item.comissoes)}</td>
+                    <td class="py-2.5 px-2 text-right text-red-400">${formatMoney(item.premiacoes)}</td>
+                    <td class="py-2.5 px-2 text-right text-gray-100">${formatMoney(item.totalOperacional)}</td>
+                    <td class="py-2.5 px-1 text-center text-gray-400">${item.pctMensal}%</td>
+                    <td class="py-2.5 px-2.5 text-right text-golda-green font-extrabold">${formatMoney(item.comissaoMensal)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('foot-comissoes').textContent = formatMoney(totalComissoes);
+            document.getElementById('foot-premiacoes').textContent = formatMoney(totalPremiacoes);
+            document.getElementById('foot-total').textContent = formatMoney(totalReceitas - totalComissoes - totalPremiacoes);
+            document.getElementById('foot-mensal').textContent = formatMoney(totalFinal);
+
+            document.getElementById('pc-comissoes-pagas').textContent = formatMoney(totalFinal);
+
+            const perdidosTotal = (appData.perdidosItems || []).reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const gastosTotal = (appData.gastosItems || []).reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const totalFinalPrestacao = totalFinal - perdidosTotal - gastosTotal;
+
+            document.getElementById('pc-perdidos').textContent = formatMoney(perdidosTotal);
+            document.getElementById('pc-gastos').textContent = formatMoney(gastosTotal);
+            document.getElementById('pc-total-final').textContent = formatMoney(totalFinalPrestacao);
+
+            const perdidosList = document.getElementById('perdidos-itemized-list');
+            perdidosList.innerHTML = '';
+            (appData.perdidosItems || []).forEach(item => {
+                const node = document.createElement('div');
+                node.textContent = `${item.desc}: ${formatMoney(item.amount)}`;
+                perdidosList.appendChild(node);
+            });
+
+            const gastosList = document.getElementById('gastos-itemized-list');
+            gastosList.innerHTML = '';
+            (appData.gastosItems || []).forEach(item => {
+                const node = document.createElement('div');
+                node.textContent = `${item.desc}: ${formatMoney(item.amount)}`;
+                gastosList.appendChild(node);
+            });
+
+            document.getElementById('pie-total-liquido').textContent = formatMoney(totalReceitas);
+            const pct = totalReceitas ? (totalComissoes / totalReceitas) * 100 : 0;
+            document.getElementById('pie-comissao-percent').textContent = pct.toFixed(1) + '%';
+
+            renderCharts();
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDashboard();
+            filterGroup('ALL');
+        });
+    </script>
+</body>
+</html>
